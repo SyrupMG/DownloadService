@@ -1,0 +1,35 @@
+PODS:
+  - DownloadService (0.1.0):
+    - HWIFileDownload
+    - PromiseKit
+  - HWIFileDownload (3.3)
+  - PromiseKit (6.4.0):
+    - PromiseKit/CorePromise (= 6.4.0)
+    - PromiseKit/Foundation (= 6.4.0)
+    - PromiseKit/UIKit (= 6.4.0)
+  - PromiseKit/CorePromise (6.4.0)
+  - PromiseKit/Foundation (6.4.0):
+    - PromiseKit/CorePromise
+  - PromiseKit/UIKit (6.4.0):
+    - PromiseKit/CorePromise
+
+DEPENDENCIES:
+  - DownloadService (from `../`)
+
+SPEC REPOS:
+  https://github.com/cocoapods/specs.git:
+    - HWIFileDownload
+    - PromiseKit
+
+EXTERNAL SOURCES:
+  DownloadService:
+    :path: "../"
+
+SPEC CHECKSUMS:
+  DownloadService: b745e1ec0afaec7431600a6eca8c010e0e2d3435
+  HWIFileDownload: 080500336b377a71294ca04b1fb94d7edb195af9
+  PromiseKit: ae3616f45d7bb9bf4ff1e91abc9b7a8c48a340e0
+
+PODFILE CHECKSUM: 5e4d595c80116f3fe3b2cf0a8c1f549f7fae54ba
+
+COCOAPODS: 1.5.3
