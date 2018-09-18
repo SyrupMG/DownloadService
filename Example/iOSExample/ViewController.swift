@@ -15,25 +15,22 @@ class BasicDownloadableCell: UITableViewCell, DownloadStatusListner {
     var downloadable: BasicDownloadable? {
         didSet {
             guard let downloadable = self.downloadable else { return }
-            bindedDownlodable = DownloadService.shared.bind(some: downloadable)
-            if bindedDownlodable?.isDownloadLocalFileExist ?? false {
+            let bindedDownlodable = DownloadService.shared.bind(some: downloadable)
+            bindedDownlodable.downloadStatusListner = self
+            if bindedDownlodable.isDownloadLocalFileExist ?? false {
                 self.detailTextLabel?.text = "finished"
             }
             self.textLabel?.text = downloadable.name
         }
     }
-
-    private var bindedDownlodable: Downloadable? {
-        didSet { bindedDownlodable?.downloadStatusListner = self }
-    }
     
     func handlePress() throws {
-        if bindedDownlodable?.isDownloading() ?? false {
-            bindedDownlodable?.cancelDownload()
+        if downloadable?.isDownloading() ?? false {
+            downloadable?.cancelDownload()
             self.detailTextLabel?.text = "cancelled"
         } else {
-            if !(bindedDownlodable?.isDownloadLocalFileExist ?? false) {
-                bindedDownlodable = try bindedDownlodable?.resumeDownload()
+            if !(downloadable?.isDownloadLocalFileExist ?? false) {
+                downloadable = try downloadable?.resumeDownload()
             }
         }
     }
@@ -42,9 +39,9 @@ class BasicDownloadableCell: UITableViewCell, DownloadStatusListner {
     func editActions() -> [UITableViewRowAction]? {
         var actions: [UITableViewRowAction] = []
         
-        if (bindedDownlodable?.isDownloadLocalFileExist ?? false) {
+        if (downloadable?.isDownloadLocalFileExist ?? false) {
             let deleteAction = UITableViewRowAction(style: .destructive, title: "Удалить загрузку") { action, indexPath in
-                guard let localUrl = self.bindedDownlodable?.downloadLocalUrl else { return }
+                guard let localUrl = self.downloadable?.downloadLocalUrl else { return }
                 
                 do {
                     try FileManager.default.removeItem(at: localUrl)
