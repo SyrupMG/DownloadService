@@ -17,7 +17,7 @@ class BasicDownloadableCell: UITableViewCell, DownloadStatusListner {
             guard let downloadable = self.downloadable else { return }
             let bindedDownlodable = DownloadService.shared.bind(some: downloadable)
             bindedDownlodable.downloadStatusListner = self
-            if bindedDownlodable.isDownloadLocalFileExist ?? false {
+            if bindedDownlodable.isDownloadLocalFileExist {
                 self.detailTextLabel?.text = "finished"
             }
             self.textLabel?.text = downloadable.name
