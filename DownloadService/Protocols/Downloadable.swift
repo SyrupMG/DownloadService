@@ -1,6 +1,5 @@
 //
 //  Downloadable.swift
-//  instore travel
 //
 //  Created by Alexey Lysenko on 11.04.18.
 //  Copyright © 2018 SL Tech. All rights reserved.
@@ -8,69 +7,80 @@
 
 import Foundation
 
-/// Наблюдает за процессом скачивания
+/// Observer for `Downloadable` retrieving progress
 public protocol DownloadStatusListner: AnyObject {
-    /// Закачался новый чанк
+    /// Next data chunk is downloaded
     ///
-    /// - Parameter progress: Объект, содержащий описание прогресса
+    /// - Parameter progress: object downloading progress struct
     func downloadProgressUpdated(progress: FileDownloadProgress)
 
-    /// Вызывается, когда скачка началась
+    /// Called when `Downloadable` is being started to download
     func downloadBegan()
 
-    /// Вызывается, когда скачка закончилась успешно
+    /// Called when downloading is successfully finished
     func downloadFinished()
 
-    /// Когда произошла ошибка при скачивании
+    /// Called when downloading failed
     ///
-    /// - Parameter error: ошибка
+    /// - Parameter error: reason of failure
     func downloadFailed(_ error: Error)
 }
 
+/// Protocol for observing, binding and (re)creating objects which can be downloaded
 public protocol Downloadable: AnyObject {
 
-    /// Фабричный конструктор
+    /// Fabric initializer
     ///
-    /// - Parameter downloadableUniqueId: уникальный ид для создания объекта
+    /// - Parameter downloadableUniqueId: unique ID for identifying specific object in this type of objects
     init?(_ downloadableUniqueId: String)
 
-    /**
-     Уникальный ИД, идентифицирующий закачку
-     */
+    /// Unique ID for identifying specific object in this type of objects
     var downloadUniqueId: String { get }
 
+    /// Remote file/source URL
     var downloadRemoteUrl: URL { get }
-    /**
-     Локальный путь, имя файла, куда сохранить скачанный контент
-     */
+
+    /// Local/target URL
     var downloadLocalUrl: URL { get }
-//
-//    var downloadStatusListner: DownloadStatusListner? { get set }
 
 }
 
 public extension Downloadable {
-    func observe(by: AnyObject) {
-//        DownloadService.shared
+    /// Adding listener who observes this `Downloadable` downloading progress
+    ///
+    /// - Parameter observer: observer which listenes
+    func observe(by observer: DownloadStatusListner) {
+        DownloadService.shared.register(listener: observer, for: self)
     }
 }
 
 public extension Downloadable {
-    public func resumeDownload() throws -> Self {
-        let object = DownloadService.shared.bind(some: self)
-        return try DownloadService.shared.resumeDownload(object)
+
+    /// Returns object which is binded to download service. It could be not the same as self!
+    var binded: Self {
+        return DownloadService.shared.bind(some: self)
     }
 
+    /// Starts/Resumes download. Should not be called before downloading service is ready - can appear multiple identical downloads.
+    ///
+    /// - Returns: returns object which is binded to dowload service and can be observed etc.
+    public func resumeDownload() -> Self {
+        return try! DownloadService.shared.resumeDownload(self.binded)
+    }
+
+    /// Cancelles downloading
     public func cancelDownload() {
         DownloadService.shared.cancelDownload(self)
     }
 
+    /// Gets downloading status
     public var isDownloading: Bool {
         return DownloadService.shared.isDownloading(self)
     }
 }
 
 public extension Downloadable {
+    /// Checks if file already downloaded
     public var isDownloadLocalFileExist: Bool {
         return FileManager.default.fileExists(atPath: downloadLocalUrl.path)
     }

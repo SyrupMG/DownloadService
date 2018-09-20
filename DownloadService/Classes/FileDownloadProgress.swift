@@ -8,25 +8,24 @@
 import Foundation
 import HWIFileDownload
 
+/// Information of current download
 public struct FileDownloadProgress {
     init(_ hwiProgress: HWIFileDownloadProgress) {
         self.downloadProgress = Double(hwiProgress.downloadProgress)
-        self.expectedFileSize = Int(hwiProgress.expectedFileSize)
-        self.receivedFileSize = Int(hwiProgress.receivedFileSize)
+        self.expectedFileSize = UInt64(hwiProgress.expectedFileSize)
+        self.receivedFileSize = UInt64(hwiProgress.receivedFileSize)
         self.estimatedRemainingTime = hwiProgress.estimatedRemainingTime
-        self.bytesPerSecondSpeed = Int(hwiProgress.bytesPerSecondSpeed)
-        self.lastLocalizedDescription = hwiProgress.lastLocalizedDescription
-        self.lastLocalizedAdditionalDescription = hwiProgress.lastLocalizedAdditionalDescription
-        self.nativeProgress = hwiProgress.nativeProgress
+        self.bytesPerSecondSpeed = UInt(hwiProgress.bytesPerSecondSpeed)
     }
-    
-    /// from 0 to 1
+
+    /// Progress from 0 to 1
     public var downloadProgress: Double
-    public var expectedFileSize: Int
-    public var receivedFileSize: Int
+    /// Target file size in bytes
+    public var expectedFileSize: UInt64
+    /// How many bytes have been downloaded
+    public var receivedFileSize: UInt64
+    /// Estimated time before completion
     public var estimatedRemainingTime: TimeInterval
-    public var bytesPerSecondSpeed: Int
-    public var lastLocalizedDescription: String?
-    public var lastLocalizedAdditionalDescription: String?
-    public var nativeProgress: Progress
+    /// Calculated downloading speed
+    public var bytesPerSecondSpeed: UInt
 }

@@ -1,0 +1,14 @@
+output: ./Example/doc
+clean: false
+hide_documentation_coverage: true
+skip_undocumented: true
+
+module: DownloadService
+
+min_acl: public
+
+xcodebuild_arguments:
+  - -workspace
+  - Example/DownloadService.xcworkspace
+  - -scheme
+  - iOSExample

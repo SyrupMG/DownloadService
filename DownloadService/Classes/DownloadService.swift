@@ -8,119 +8,60 @@
 
 import Foundation
 import HWIFileDownload
-import PromiseKit
-
-private final class Weak<T> {
-    private weak var rawValue: AnyObject?
-    private(set) var value: T? {
-        get { return rawValue as! T? }
-        set { rawValue = newValue as AnyObject }
-    }
-    init(_ value: T) {
-        self.value = value
-    }
-
-    var isValid: Bool {
-        return value != nil
-    }
-}
-
-private class WeakDictionary<Key: Hashable, Value> : Collection {
-
-    typealias Storage = Dictionary<Key, Weak<Value>>
-    typealias Index = DictionaryIndex<Key, Weak<Value>>
-
-    private var storage: Storage
-
-    var startIndex: Storage.Index { return storage.startIndex }
-    var endIndex: Storage.Index { return storage.endIndex }
-    func index(after i: Index) -> Index { return storage.index(after: i) }
-
-    public init() {
-        storage = [:]
-    }
-
-    public init(dictionary: [Key : Value]) {
-        storage = dictionary.mapValues { Weak($0) }
-    }
-
-    private init(withStorage s: [Key: Weak<Value>]) {
-        storage = s
-        reap()
-    }
-
-    subscript(position: Index) -> (Key, Weak<Value>) {
-        reap()
-        return storage[position]
-    }
-
-    subscript(key: Key) -> Value? {
-        get {
-            reap()
-            return storage[key]?.value
-        }
-        set {
-            reap()
-            guard let value = newValue else { return }
-            storage[key] = Weak(value)
-        }
-    }
-
-    public subscript(bounds: Range<Index>) -> WeakDictionary<Key, Value> {
-        return WeakDictionary(withStorage: Storage(uniqueKeysWithValues: storage[bounds.lowerBound ..< bounds.upperBound].map { $0 }))
-    }
-
-    private func reap() {
-        guard storage.filter({ !$0.value.isValid }).count > 0 else { return }
-        storage = storage.filter { $0.value.isValid }
-    }
-}
 
 public enum DownloadableError: Error {
     case notBound
 }
 
-private let logger: Logger = SimpleLogger()
-
+/// Main service
 public class DownloadService: NSObject {
 
+    /// Shared instance. Just use it!
     public static let shared = DownloadService()
 
     private var downloadManager: HWIFileDownloader!
     private var downloadableCache = WeakDictionary<String, Downloadable>()
     private var downloadableListeners = [String: [DownloadStatusListner]]()
-    private let onReadyPending = Promise<DownloadService>.pending()
 
-    public var onReady: Promise<DownloadService> { return onReadyPending.promise }
     public var hasActiveDownloads: Bool { return downloadManager.hasActiveDownloads() }
 
-    override init() {
+    private override init() {
         super.init()
         downloadManager = HWIFileDownloader(delegate: self)
         downloadManager.setup { [weak self] in
-            self?.onReadyPending.resolver.fulfill(self!)
-
-            if self?.downloadManager.hasActiveDownloads() ?? false {
-                logger.info("Download manager has active downloads, resuming")
-            }
+            self?.isReady = true
         }
+    }
+
+    private var readyHandlers: [() -> Void] = []
+    private var isReady: Bool = false {
+        didSet {
+            readyHandlers.forEach { $0() }
+            readyHandlers.removeAll()
+        }
+    }
+
+    /// Register callback which is called when download service initialized and ready to work.
+    ///
+    /// - Parameter callback: callback
+    public func onReady(_ callback: @escaping () -> Void) {
+        if isReady { callback() }
+        else { readyHandlers.append(callback) }
+    }
+
+    func register(listener: DownloadStatusListner, for object: Downloadable) {
+        downloadableListeners[object.downloadUniqueId, default: []].append(listener)
     }
 
     func notify(_ downloadable: Downloadable, _ listener: @escaping (DownloadStatusListner) -> Void) {
         DispatchQueue.main.async { [weak self] in
             guard let this = self else { return }
-            defer { this.clearCache() }
             this.downloadableListeners[downloadable.downloadUniqueId]?.forEach { listener($0) }
         }
     }
 
-    /**
-     Начинает закачку по информации протокола
-
-     @param downloadable Объект, описывающий загрузку
-     */
     @discardableResult
-    public func resumeDownload<T: Downloadable>(_ downloadable: T) throws -> T {
+    func resumeDownload<T: Downloadable>(_ downloadable: T) throws -> T {
         let mixedUniqueId = downloadable.mixedUniqueId
         guard let cachedDownloadable = getDownloadableBy(mixedUniqueId: mixedUniqueId) as? T else { throw DownloadableError.notBound }
 
@@ -130,7 +71,6 @@ public class DownloadService: NSObject {
 
             notify(cachedDownloadable) { $0.downloadBegan() }
         }
-        clearCache()
         return cachedDownloadable
     }
     
@@ -138,16 +78,9 @@ public class DownloadService: NSObject {
         return downloadManager.isDownloadingIdentifier(downloadable.mixedUniqueId)
     }
 
-    /**
-     Отменить закачку
-
-     @param downloadable Объект
-     */
-    public func cancelDownload(_ downloadable: Downloadable) {
+    func cancelDownload(_ downloadable: Downloadable) {
         let uniqueId = downloadable.mixedUniqueId
         downloadManager.cancelDownload(withIdentifier: uniqueId)
-
-        clearCache()
     }
 
     /// Возвращает связанный с сервисом объект, который уже находится
@@ -155,7 +88,7 @@ public class DownloadService: NSObject {
     ///
     /// - Parameter some: объект, который мы хотим завязать с сервисом загрузки
     /// - Returns: объект, который завязан с сервисом загрузки
-    public func bind<T: Downloadable>(some: T) -> T {
+    func bind<T: Downloadable>(some: T) -> T {
         let mixedUniqueId = some.mixedUniqueId
 
         guard let cachedDownloadable = getDownloadableBy(mixedUniqueId: mixedUniqueId) else {
@@ -165,32 +98,25 @@ public class DownloadService: NSObject {
         return cachedDownloadable as! T
     }
 
-    // MARK: - работа с регистрацией сущностей в сервисе
+
     private var registeredDownloadables = [String: Downloadable.Type]()
 
-    /// Регистрирует тип, который будет будет использовать фабричный метод из протокола для создания через уникальный ИД
+    /// Registers `Downloadable`\`s type in manager for service could use fabric initializers for creating instances
     ///
-    /// - Parameter downloadableType: тип
+    /// - Parameter downloadableType: type
     public func register<T: Downloadable>(_ downloadableType: T.Type) {
         registeredDownloadables[downloadableType.classId] = downloadableType
     }
 
-    /**
-     Блок, который передается в AppDelegate. Используется для обработки фоновых закачек
-     */
+    /// Must be used in UIApplicationDelegate to catch downloads finish
     public var backgroundSessionCompletionHandlerBlock: () -> () = {} {
         didSet { downloadManager.setBackgroundSessionCompletionHandlerBlock(backgroundSessionCompletionHandlerBlock) }
     }
-    
-    // MARK: - Network Activity counting
-    /**
-     Функция, которя будет вызываться, если надо увеличить счетчик сетевых активностей
-     */
+
+    /// Called when more downloads are active
     public var incrementNetworkActivityCountHandler: () -> Void = {}
-    
-    /**
-     Функция, которя будет вызываться, если надо уменьшить счетчик сетевых активностей
-     */
+
+    /// Called when some of downloads is finished
     public var decrementNetworkActivityCountHandler: () -> Void = {}
 
     // MARK: - privates
@@ -205,12 +131,7 @@ public class DownloadService: NSObject {
 
     // MARK: - Cache operations
     private func addToCache(_ downloadable: Downloadable) {
-        clearCache()
         downloadableCache[downloadable.mixedUniqueId] = downloadable
-    }
-
-    private func clearCache() {
-//        downloadableCache.reap()
     }
 }
 

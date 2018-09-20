@@ -7,7 +7,7 @@
 
 import Foundation
 
-public protocol Logger {
+protocol Logger {
     func info(_ string: String)
     func error(_ string: String)
 }

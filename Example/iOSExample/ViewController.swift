@@ -14,10 +14,9 @@ class BasicDownloadableCell: UITableViewCell, DownloadStatusListner {
     
     var downloadable: BasicDownloadable? {
         didSet {
-            guard let downloadable = self.downloadable else { return }
-            let bindedDownlodable = DownloadService.shared.bind(some: downloadable)
-            bindedDownlodable.downloadStatusListner = self
-            if bindedDownlodable.isDownloadLocalFileExist {
+            guard let downloadable = self.downloadable?.binded else { return }
+            downloadable.observe(by: self)
+            if downloadable.isDownloadLocalFileExist {
                 self.detailTextLabel?.text = "finished"
             }
             self.textLabel?.text = downloadable.name
@@ -30,7 +29,7 @@ class BasicDownloadableCell: UITableViewCell, DownloadStatusListner {
             self.detailTextLabel?.text = "cancelled"
         } else {
             if !(downloadable?.isDownloadLocalFileExist ?? false) {
-                downloadable = try downloadable?.resumeDownload()
+                downloadable = downloadable?.resumeDownload()
             }
         }
     }
@@ -55,7 +54,7 @@ class BasicDownloadableCell: UITableViewCell, DownloadStatusListner {
     }
     
     // MARK: - init
-    override init(style: UITableViewCellStyle, reuseIdentifier: String?) {
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: .subtitle, reuseIdentifier: reuseIdentifier)
         detailTextLabel?.numberOfLines = 0
     }
@@ -91,7 +90,6 @@ let filesLinks = [
 
 class BasicDownloadable: Downloadable {    
     var name: String
-    weak var downloadStatusListner: DownloadStatusListner?
 
     var downloadUniqueId: String { return name }
     let downloadRemoteUrl: URL
@@ -122,10 +120,10 @@ class ViewController: UIViewController {
         super.viewDidLoad()
         tableView.register(BasicDownloadableCell.self, forCellReuseIdentifier: BasicDownloadableCell.identifier)
         
-        _ = DownloadService.shared.onReady.done { _ in
+        DownloadService.shared.register(BasicDownloadable.self)
+        DownloadService.shared.onReady {
             print("service ready")
         }
-        DownloadService.shared.register(BasicDownloadable.self)
         // Do any additional setup after loading the view, typically from a nib.
     }
 }
