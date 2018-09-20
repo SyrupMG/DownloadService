@@ -25,7 +25,7 @@ class BasicDownloadableCell: UITableViewCell, DownloadStatusListner {
     }
     
     func handlePress() throws {
-        if downloadable?.isDownloading() ?? false {
+        if downloadable?.isDownloading ?? false {
             downloadable?.cancelDownload()
             self.detailTextLabel?.text = "cancelled"
         } else {
@@ -94,7 +94,7 @@ class BasicDownloadable: Downloadable {
     weak var downloadStatusListner: DownloadStatusListner?
 
     var downloadUniqueId: String { return name }
-    var downloadRemoteUrl: URL
+    let downloadRemoteUrl: URL
     
     required init?(_ downloadableUniqueId: String) {
         guard let remoteUrlString = filesLinks[downloadableUniqueId],

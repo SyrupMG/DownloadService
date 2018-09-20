@@ -10,26 +10,90 @@ import Foundation
 import HWIFileDownload
 import PromiseKit
 
-private class WeakDownloadableWrapper {
-    private(set) weak var downloadable: Downloadable?
-    init(_ downloadable: Downloadable) {
-        self.downloadable = downloadable
+private final class Weak<T> {
+    private weak var rawValue: AnyObject?
+    private(set) var value: T? {
+        get { return rawValue as! T? }
+        set { rawValue = newValue as AnyObject }
+    }
+    init(_ value: T) {
+        self.value = value
+    }
+
+    var isValid: Bool {
+        return value != nil
     }
 }
 
-class DownloadableNotBound: Error {}
+private class WeakDictionary<Key: Hashable, Value> : Collection {
+
+    typealias Storage = Dictionary<Key, Weak<Value>>
+    typealias Index = DictionaryIndex<Key, Weak<Value>>
+
+    private var storage: Storage
+
+    var startIndex: Storage.Index { return storage.startIndex }
+    var endIndex: Storage.Index { return storage.endIndex }
+    func index(after i: Index) -> Index { return storage.index(after: i) }
+
+    public init() {
+        storage = [:]
+    }
+
+    public init(dictionary: [Key : Value]) {
+        storage = dictionary.mapValues { Weak($0) }
+    }
+
+    private init(withStorage s: [Key: Weak<Value>]) {
+        storage = s
+        reap()
+    }
+
+    subscript(position: Index) -> (Key, Weak<Value>) {
+        reap()
+        return storage[position]
+    }
+
+    subscript(key: Key) -> Value? {
+        get {
+            reap()
+            return storage[key]?.value
+        }
+        set {
+            reap()
+            guard let value = newValue else { return }
+            storage[key] = Weak(value)
+        }
+    }
+
+    public subscript(bounds: Range<Index>) -> WeakDictionary<Key, Value> {
+        return WeakDictionary(withStorage: Storage(uniqueKeysWithValues: storage[bounds.lowerBound ..< bounds.upperBound].map { $0 }))
+    }
+
+    private func reap() {
+        guard storage.filter({ !$0.value.isValid }).count > 0 else { return }
+        storage = storage.filter { $0.value.isValid }
+    }
+}
+
+public enum DownloadableError: Error {
+    case notBound
+}
+
+private let logger: Logger = SimpleLogger()
 
 public class DownloadService: NSObject {
+
+    public static let shared = DownloadService()
+
     private var downloadManager: HWIFileDownloader!
-    private var downloadableCache = [String: WeakDownloadableWrapper]()
-    private var onReadyPending = Promise<DownloadService>.pending()
+    private var downloadableCache = WeakDictionary<String, Downloadable>()
+    private var downloadableListeners = [String: [DownloadStatusListner]]()
+    private let onReadyPending = Promise<DownloadService>.pending()
 
     public var onReady: Promise<DownloadService> { return onReadyPending.promise }
     public var hasActiveDownloads: Bool { return downloadManager.hasActiveDownloads() }
-    public var logger: Logger = SimpleLogger()
-    
-    public static let shared = DownloadService()
-    
+
     override init() {
         super.init()
         downloadManager = HWIFileDownloader(delegate: self)
@@ -37,8 +101,16 @@ public class DownloadService: NSObject {
             self?.onReadyPending.resolver.fulfill(self!)
 
             if self?.downloadManager.hasActiveDownloads() ?? false {
-                self?.logger.info("Download manager has active downloads, resuming")
+                logger.info("Download manager has active downloads, resuming")
             }
+        }
+    }
+
+    func notify(_ downloadable: Downloadable, _ listener: @escaping (DownloadStatusListner) -> Void) {
+        DispatchQueue.main.async { [weak self] in
+            guard let this = self else { return }
+            defer { this.clearCache() }
+            this.downloadableListeners[downloadable.downloadUniqueId]?.forEach { listener($0) }
         }
     }
 
@@ -50,19 +122,19 @@ public class DownloadService: NSObject {
     @discardableResult
     public func resumeDownload<T: Downloadable>(_ downloadable: T) throws -> T {
         let mixedUniqueId = downloadable.mixedUniqueId
-        guard let cachedDownloadable = getDownloadableBy(mixedUniqueId: mixedUniqueId) as? T else {
-            throw DownloadableNotBound()
-        }
+        guard let cachedDownloadable = getDownloadableBy(mixedUniqueId: mixedUniqueId) as? T else { throw DownloadableError.notBound }
+
         if !downloadManager.isDownloadingIdentifier(mixedUniqueId) {
             downloadManager.startDownload(withIdentifier: mixedUniqueId,
                                           fromRemoteURL: cachedDownloadable.downloadRemoteUrl)
-            DispatchQueue.main.async { cachedDownloadable.downloadStatusListner?.downloadBegan() }
+
+            notify(cachedDownloadable) { $0.downloadBegan() }
         }
-        cleanCache()
+        clearCache()
         return cachedDownloadable
     }
     
-    public func isDownloading<T: Downloadable>(_ downloadable: T) -> Bool {
+    func isDownloading<T: Downloadable>(_ downloadable: T) -> Bool {
         return downloadManager.isDownloadingIdentifier(downloadable.mixedUniqueId)
     }
 
@@ -75,7 +147,7 @@ public class DownloadService: NSObject {
         let uniqueId = downloadable.mixedUniqueId
         downloadManager.cancelDownload(withIdentifier: uniqueId)
 
-        cleanCache()
+        clearCache()
     }
 
     /// Возвращает связанный с сервисом объект, который уже находится
@@ -95,6 +167,10 @@ public class DownloadService: NSObject {
 
     // MARK: - работа с регистрацией сущностей в сервисе
     private var registeredDownloadables = [String: Downloadable.Type]()
+
+    /// Регистрирует тип, который будет будет использовать фабричный метод из протокола для создания через уникальный ИД
+    ///
+    /// - Parameter downloadableType: тип
     public func register<T: Downloadable>(_ downloadableType: T.Type) {
         registeredDownloadables[downloadableType.classId] = downloadableType
     }
@@ -103,9 +179,7 @@ public class DownloadService: NSObject {
      Блок, который передается в AppDelegate. Используется для обработки фоновых закачек
      */
     public var backgroundSessionCompletionHandlerBlock: () -> () = {} {
-        didSet {
-            downloadManager.setBackgroundSessionCompletionHandlerBlock(backgroundSessionCompletionHandlerBlock)
-        }
+        didSet { downloadManager.setBackgroundSessionCompletionHandlerBlock(backgroundSessionCompletionHandlerBlock) }
     }
     
     // MARK: - Network Activity counting
@@ -121,7 +195,7 @@ public class DownloadService: NSObject {
 
     // MARK: - privates
     private func getDownloadableBy(mixedUniqueId: String) -> Downloadable? {
-        return downloadableCache[mixedUniqueId]?.downloadable
+        return downloadableCache[mixedUniqueId]
     }
 
     private func createDownloadableFrom(mixedUniqueId: String) -> Downloadable? {
@@ -131,34 +205,28 @@ public class DownloadService: NSObject {
 
     // MARK: - Cache operations
     private func addToCache(_ downloadable: Downloadable) {
-        cleanCache()
-        downloadableCache[downloadable.mixedUniqueId] = WeakDownloadableWrapper(downloadable)
+        clearCache()
+        downloadableCache[downloadable.mixedUniqueId] = downloadable
     }
 
-    private func cleanCache() {
-        downloadableCache = downloadableCache.filter { $0.value.downloadable != nil }
+    private func clearCache() {
+//        downloadableCache.reap()
     }
 }
 
 extension DownloadService: HWIFileDownloadDelegate {
     public func downloadDidComplete(withIdentifier aDownloadIdentifier: String, localFileURL aLocalFileURL: URL) {
-        guard let downloadable = getDownloadableBy(mixedUniqueId: aDownloadIdentifier) else {
-            return
-        }
-        DispatchQueue.main.async {
-            downloadable.downloadStatusListner?.downloadFinished()
-            self.cleanCache()
-        }
+        guard let downloadable = getDownloadableBy(mixedUniqueId: aDownloadIdentifier) else { return }
+        notify(downloadable) { $0.downloadFinished() }
     }
 
-    public func downloadFailed(withIdentifier aDownloadIdentifier: String, error anError: Error, httpStatusCode aHttpStatusCode: Int, errorMessagesStack anErrorMessagesStack: [String]?, resumeData aResumeData: Data?) {
-        guard let downloadable = getDownloadableBy(mixedUniqueId: aDownloadIdentifier) else {
-            return
-        }
-        DispatchQueue.main.async {
-            downloadable.downloadStatusListner?.downloadFailed(anError)
-            self.cleanCache()
-        }
+    public func downloadFailed(withIdentifier aDownloadIdentifier: String,
+                               error anError: Error,
+                               httpStatusCode aHttpStatusCode: Int,
+                               errorMessagesStack anErrorMessagesStack: [String]?,
+                               resumeData aResumeData: Data?) {
+        guard let downloadable = getDownloadableBy(mixedUniqueId: aDownloadIdentifier) else { return }
+        notify(downloadable) { $0.downloadFailed(anError) }
     }
     
     public func incrementNetworkActivityIndicatorActivityCount() {
@@ -176,18 +244,15 @@ extension DownloadService: HWIFileDownloadDelegate {
     }
 
     public func localFileURL(forIdentifier aDownloadIdentifier: String, remoteURL aRemoteURL: URL) -> URL? {
-        guard let downloadable = getDownloadableBy(mixedUniqueId: aDownloadIdentifier) ?? createDownloadableFrom(mixedUniqueId: aDownloadIdentifier) else {
-            return nil
-        }
+        guard let downloadable = getDownloadableBy(mixedUniqueId: aDownloadIdentifier)
+            ?? createDownloadableFrom(mixedUniqueId: aDownloadIdentifier) else { return nil }
 
         var localPath = downloadable.downloadLocalUrl
-        if localPath.isFileURL {
-            localPath = localPath.deletingLastPathComponent()
-        }
+        if localPath.isFileURL { localPath = localPath.deletingLastPathComponent() }
 
         do {
             try FileManager.default.createDirectory(at: localPath, withIntermediateDirectories: true, attributes: nil)
-        } catch let error as NSError {
+        } catch {
             logger.error(error.localizedDescription)
             return nil
         }
@@ -196,17 +261,9 @@ extension DownloadService: HWIFileDownloadDelegate {
     }
 
     public func downloadProgressChanged(forIdentifier aDownloadIdentifier: String) {
-        guard let downloadable = getDownloadableBy(mixedUniqueId: aDownloadIdentifier) else {
-            return
-        }
-
-        DispatchQueue.main.async { [weak self] in
-            defer { self?.cleanCache() }
-            guard let progress = self?.downloadManager.downloadProgress(forIdentifier: aDownloadIdentifier) else {
-                return
-            }
-            downloadable.downloadStatusListner?.downloadProgressUpdated(progress: FileDownloadProgress(progress))
-        }
+        guard let downloadable = getDownloadableBy(mixedUniqueId: aDownloadIdentifier) else { return }
+        guard let progress = downloadManager.downloadProgress(forIdentifier: aDownloadIdentifier) else { return }
+        notify(downloadable) { $0.downloadProgressUpdated(progress: FileDownloadProgress(progress)) }
     }
 }
 
