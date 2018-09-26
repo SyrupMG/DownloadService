@@ -83,8 +83,6 @@ public class DownloadService: NSObject {
                     } else {
                         this.downloadManager.startDownload(withIdentifier: taskToResume.downloadToken, fromRemoteURL: taskToResume.remoteURL)
                     }
-                    let uniqueId = this.restoreFrom(mixedUniqueId: taskToResume.downloadToken).uniqueId
-                    this.notify(uniqueId) { $0.downloadBegan() }
                 }
                 self?.configurationIsChainging = false
             }
@@ -265,7 +263,8 @@ public class DownloadService: NSObject {
 
 extension DownloadService: HWIFileDownloadDelegate {
     public func downloadDidComplete(withIdentifier aDownloadIdentifier: String, localFileURL aLocalFileURL: URL) {
-        guard let downloadable = getDownloadableBy(mixedUniqueId: aDownloadIdentifier) else { return }
+        guard let downloadable = getDownloadableBy(mixedUniqueId: aDownloadIdentifier),
+            !configurationIsChainging else { return }
         notify(downloadable) { $0.downloadFinished() }
     }
 
@@ -274,7 +273,8 @@ extension DownloadService: HWIFileDownloadDelegate {
                                httpStatusCode aHttpStatusCode: Int,
                                errorMessagesStack anErrorMessagesStack: [String]?,
                                resumeData aResumeData: Data?) {
-        guard let downloadable = getDownloadableBy(mixedUniqueId: aDownloadIdentifier) else { return }
+        guard let downloadable = getDownloadableBy(mixedUniqueId: aDownloadIdentifier),
+            !configurationIsChainging else { return }
         notify(downloadable) { $0.downloadFailed(anError) }
     }
     
@@ -311,8 +311,9 @@ extension DownloadService: HWIFileDownloadDelegate {
     }
 
     public func downloadProgressChanged(forIdentifier aDownloadIdentifier: String) {
-        guard let downloadable = getDownloadableBy(mixedUniqueId: aDownloadIdentifier) else { return }
-        guard let progress = downloadManager.downloadProgress(forIdentifier: aDownloadIdentifier) else { return }
+        guard let downloadable = getDownloadableBy(mixedUniqueId: aDownloadIdentifier),
+            let progress = downloadManager.downloadProgress(forIdentifier: aDownloadIdentifier),
+            !configurationIsChainging else { return }
         notify(downloadable) { $0.downloadProgressUpdated(progress: FileDownloadProgress(progress)) }
     }
 }
