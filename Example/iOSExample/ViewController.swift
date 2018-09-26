@@ -126,6 +126,24 @@ class ViewController: UIViewController {
         }
         // Do any additional setup after loading the view, typically from a nib.
     }
+    
+    @IBAction func resetButtonPressed() {
+        let newConfig = DownloadManagerConfig(allowsCellularAccess: false, concurrentDownloads: .finite(maxCount: 1))
+        DownloadService.shared.configuration = newConfig
+    }
+    
+    @IBAction func resetRandomButtonPressed() {
+        let concurrent: DownloadManagerConfig.ConcurentDownloads = (Int.random(in: 0...1) == 1) ? .infinite : .finite(maxCount: Int.random(in: 1...5))
+        let newConfig = DownloadManagerConfig(allowsCellularAccess: Bool.random(), concurrentDownloads: concurrent)
+        DownloadService.shared.configuration = newConfig
+        let dict: [String: Any] = [
+            "allowsCellularAccess": newConfig.allowsCellularAccess,
+            "concurrentDownloads": newConfig.concurrentDownloads
+        ]
+        let alertVC = UIAlertController(title: "Вот", message: "\(dict)", preferredStyle: .alert)
+        alertVC.addAction(UIAlertAction(title: "ok", style: .default, handler: nil))
+        present(alertVC, animated: true)
+    }
 }
 
 extension ViewController: UITableViewDelegate {
