@@ -9,6 +9,9 @@
 
 To run the example project, clone the repo, and run `pod install` from the Example directory first.
 
+## Documentation
+[Avaliable here](https://syrupmg.github.io/DownloadService/)
+
 ## Requirements
 
 ## Installation
@@ -23,6 +26,7 @@ pod 'DownloadService'
 ## Author
 
 abesmon, abesmon@gmail.com
+horovodovodo4ka, xbitstream@gmail.com
 
 ## License
 
