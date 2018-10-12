@@ -1,0 +1,75 @@
+{
+  "warnings": [
+    {
+      "file": "/Users/alysenko/DEV/DownloadService/DownloadService/Classes/DownloadService.swift",
+      "line": 265,
+      "symbol": "DownloadService.downloadDidComplete(withIdentifier:localFileURL:)",
+      "symbol_kind": "source.lang.swift.decl.function.method.instance",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/alysenko/DEV/DownloadService/DownloadService/Classes/DownloadService.swift",
+      "line": 271,
+      "symbol": "DownloadService.downloadFailed(withIdentifier:error:httpStatusCode:errorMessagesStack:resumeData:)",
+      "symbol_kind": "source.lang.swift.decl.function.method.instance",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/alysenko/DEV/DownloadService/DownloadService/Classes/DownloadService.swift",
+      "line": 281,
+      "symbol": "DownloadService.incrementNetworkActivityIndicatorActivityCount()",
+      "symbol_kind": "source.lang.swift.decl.function.method.instance",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/alysenko/DEV/DownloadService/DownloadService/Classes/DownloadService.swift",
+      "line": 285,
+      "symbol": "DownloadService.decrementNetworkActivityIndicatorActivityCount()",
+      "symbol_kind": "source.lang.swift.decl.function.method.instance",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/alysenko/DEV/DownloadService/DownloadService/Classes/DownloadService.swift",
+      "line": 291,
+      "symbol": "DownloadService.customizeBackgroundSessionConfiguration(_:)",
+      "symbol_kind": "source.lang.swift.decl.function.method.instance",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/alysenko/DEV/DownloadService/DownloadService/Classes/DownloadService.swift",
+      "line": 296,
+      "symbol": "DownloadService.localFileURL(forIdentifier:remoteURL:)",
+      "symbol_kind": "source.lang.swift.decl.function.method.instance",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/alysenko/DEV/DownloadService/DownloadService/Classes/DownloadService.swift",
+      "line": 313,
+      "symbol": "DownloadService.downloadProgressChanged(forIdentifier:)",
+      "symbol_kind": "source.lang.swift.decl.function.method.instance",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/alysenko/DEV/DownloadService/DownloadService/Models/DownloadManagerConfig.swift",
+      "line": 10,
+      "symbol": "DownloadManagerConfig",
+      "symbol_kind": "source.lang.swift.decl.struct",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/alysenko/DEV/DownloadService/DownloadService/Models/DownloadableError.swift",
+      "line": 10,
+      "symbol": "DownloadableError",
+      "symbol_kind": "source.lang.swift.decl.enum",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/alysenko/DEV/DownloadService/DownloadService/Utils/SimpleLogger.swift",
+      "line": 10,
+      "symbol": "SimpleLogger",
+      "symbol_kind": "source.lang.swift.decl.class",
+      "warning": "undocumented"
+    }
+  ],
+  "source_directory": "/Users/alysenko/DEV/DownloadService"
+}
