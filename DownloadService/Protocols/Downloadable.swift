@@ -55,9 +55,8 @@ public extension Downloadable {
 }
 
 public extension Downloadable {
-
     /// Returns object which is binded to download service. It could be not the same as self!
-    var binded: Self {
+    internal var binded: Self {
         return DownloadService.shared.bind(some: self)
     }
 
