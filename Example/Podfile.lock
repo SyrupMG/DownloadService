@@ -20,7 +20,7 @@ CHECKOUT OPTIONS:
     :git: https://github.com/SyrupMG/HWIFileDownload.git
 
 SPEC CHECKSUMS:
-  DownloadService: 988dbbe4773e5d6c6e3d0b8e36c74c35de5fc763
+  DownloadService: 66d340f465c15a7174e69bdb40916c6c3e47a179
   HWIFileDownload: 91b4ea459861dc563688dc2970115d4d2ef1e205
 
 PODFILE CHECKSUM: 4be5106a79c60ef4c8ad3e6a7286a1805bc23abf

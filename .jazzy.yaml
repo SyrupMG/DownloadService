@@ -1,4 +1,4 @@
-output: ./Example/doc
+output: ./docs
 clean: false
 hide_documentation_coverage: true
 skip_undocumented: true
