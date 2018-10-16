@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import HWIFileDownload
+import SMG_HWIFileDownload
 
 /// Information of current download
 public struct FileDownloadProgress {

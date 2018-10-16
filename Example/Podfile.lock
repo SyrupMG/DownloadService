@@ -1,28 +1,23 @@
 PODS:
   - DownloadService (0.1.0):
-    - HWIFileDownload
-  - HWIFileDownload (3.3)
+    - SMG-HWIFileDownload
+  - SMG-HWIFileDownload (3.4)
 
 DEPENDENCIES:
   - DownloadService (from `../`)
-  - HWIFileDownload (from `https://github.com/SyrupMG/HWIFileDownload.git`, branch `feature/tvos-support`)
+
+SPEC REPOS:
+  https://github.com/cocoapods/specs.git:
+    - SMG-HWIFileDownload
 
 EXTERNAL SOURCES:
   DownloadService:
     :path: "../"
-  HWIFileDownload:
-    :branch: feature/tvos-support
-    :git: https://github.com/SyrupMG/HWIFileDownload.git
-
-CHECKOUT OPTIONS:
-  HWIFileDownload:
-    :commit: 0699855f0402fce1b580a169421611c7c9987baa
-    :git: https://github.com/SyrupMG/HWIFileDownload.git
 
 SPEC CHECKSUMS:
-  DownloadService: 66d340f465c15a7174e69bdb40916c6c3e47a179
-  HWIFileDownload: 91b4ea459861dc563688dc2970115d4d2ef1e205
+  DownloadService: 0f08cd7d78400fbbcfde5e52a7e6e79ab494ad7d
+  SMG-HWIFileDownload: aaa55ad211ad5d4a7c5822dad04d23e084152a6a
 
-PODFILE CHECKSUM: 4be5106a79c60ef4c8ad3e6a7286a1805bc23abf
+PODFILE CHECKSUM: 5e4d595c80116f3fe3b2cf0a8c1f549f7fae54ba
 
 COCOAPODS: 1.5.3

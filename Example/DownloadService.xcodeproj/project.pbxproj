@@ -197,14 +197,14 @@
 			inputPaths = (
 				"${SRCROOT}/Pods/Target Support Files/Pods-iOSExample/Pods-iOSExample-frameworks.sh",
 				"${BUILT_PRODUCTS_DIR}/DownloadService/DownloadService.framework",
-				"${BUILT_PRODUCTS_DIR}/HWIFileDownload/HWIFileDownload.framework",
+				"${BUILT_PRODUCTS_DIR}/SMG-HWIFileDownload/SMG_HWIFileDownload.framework",
 			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 			);
 			outputPaths = (
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/DownloadService.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/HWIFileDownload.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/SMG_HWIFileDownload.framework",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;

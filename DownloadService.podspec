@@ -39,6 +39,6 @@ TODO: Add long description of the pod here.
   # }
 
   # s.frameworks = 'UIKit', 'MapKit'
-  s.dependency 'HWIFileDownload'
+  s.dependency 'SMG-HWIFileDownload'
   # s.dependency 'PromiseKit'
 end

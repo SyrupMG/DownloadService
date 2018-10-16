@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import HWIFileDownload
+import SMG_HWIFileDownload
 
 /// Main service
 public class DownloadService: NSObject {
@@ -263,9 +263,8 @@ public class DownloadService: NSObject {
 
 extension DownloadService: HWIFileDownloadDelegate {
     public func downloadDidComplete(withIdentifier aDownloadIdentifier: String, localFileURL aLocalFileURL: URL) {
-        guard let downloadable = getDownloadableBy(mixedUniqueId: aDownloadIdentifier),
-            !configurationIsChainging else { return }
-        notify(downloadable) { $0.downloadFinished() }
+        guard !configurationIsChainging else { return }
+        notify(restoreFrom(mixedUniqueId: aDownloadIdentifier).uniqueId) { $0.downloadFinished() }
     }
 
     public func downloadFailed(withIdentifier aDownloadIdentifier: String,
@@ -273,9 +272,8 @@ extension DownloadService: HWIFileDownloadDelegate {
                                httpStatusCode aHttpStatusCode: Int,
                                errorMessagesStack anErrorMessagesStack: [String]?,
                                resumeData aResumeData: Data?) {
-        guard let downloadable = getDownloadableBy(mixedUniqueId: aDownloadIdentifier),
-            !configurationIsChainging else { return }
-        notify(downloadable) { $0.downloadFailed(anError) }
+        guard !configurationIsChainging else { return }
+        notify(restoreFrom(mixedUniqueId: aDownloadIdentifier).uniqueId) { $0.downloadFailed(anError) }
     }
     
     public func incrementNetworkActivityIndicatorActivityCount() {
@@ -311,10 +309,9 @@ extension DownloadService: HWIFileDownloadDelegate {
     }
 
     public func downloadProgressChanged(forIdentifier aDownloadIdentifier: String) {
-        guard let downloadable = getDownloadableBy(mixedUniqueId: aDownloadIdentifier),
-            let progress = downloadManager.downloadProgress(forIdentifier: aDownloadIdentifier),
+        guard let progress = downloadManager.downloadProgress(forIdentifier: aDownloadIdentifier),
             !configurationIsChainging else { return }
-        notify(downloadable) { $0.downloadProgressUpdated(progress: FileDownloadProgress(progress)) }
+        notify(restoreFrom(mixedUniqueId: aDownloadIdentifier).uniqueId) { $0.downloadProgressUpdated(progress: FileDownloadProgress(progress)) }
     }
 }
 

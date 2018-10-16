@@ -1,8 +1,5 @@
 use_frameworks!
 target 'iOSExample' do
-  # Temporary solution, while main repo not supporting tvos
-  pod 'HWIFileDownload', :git => 'https://github.com/SyrupMG/HWIFileDownload.git', :branch => 'feature/tvos-support'
-
   pod 'DownloadService', :path => '../'
   
   
