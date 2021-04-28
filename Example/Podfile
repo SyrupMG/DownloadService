@@ -2,5 +2,4 @@ use_frameworks!
 target 'iOSExample' do
   pod 'DownloadService', :path => '../'
   
-  
 end

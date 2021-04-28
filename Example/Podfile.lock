@@ -7,7 +7,7 @@ DEPENDENCIES:
   - DownloadService (from `../`)
 
 SPEC REPOS:
-  https://github.com/cocoapods/specs.git:
+  https://github.com/CocoaPods/Specs.git:
     - SMG-HWIFileDownload
 
 EXTERNAL SOURCES:
@@ -15,9 +15,9 @@ EXTERNAL SOURCES:
     :path: "../"
 
 SPEC CHECKSUMS:
-  DownloadService: 0f08cd7d78400fbbcfde5e52a7e6e79ab494ad7d
+  DownloadService: 8c1f38f279c124bf6a36e0f86e905da167f7cb5b
   SMG-HWIFileDownload: aaa55ad211ad5d4a7c5822dad04d23e084152a6a
 
 PODFILE CHECKSUM: 5e4d595c80116f3fe3b2cf0a8c1f549f7fae54ba
 
-COCOAPODS: 1.5.3
+COCOAPODS: 1.10.1

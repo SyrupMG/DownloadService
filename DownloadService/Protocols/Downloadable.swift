@@ -63,24 +63,24 @@ public extension Downloadable {
     /// Starts/Resumes download. Should not be called before downloading service is ready - can appear multiple identical downloads.
     ///
     /// - Returns: returns object which is binded to dowload service and can be observed etc.
-    public func resumeDownload() -> Self {
+    func resumeDownload() -> Self {
         return try! DownloadService.shared.resumeDownload(self.binded)
     }
 
     /// Cancelles downloading
-    public func cancelDownload() {
+    func cancelDownload() {
         DownloadService.shared.cancelDownload(self)
     }
 
     /// Gets downloading status
-    public var isDownloading: Bool {
+    var isDownloading: Bool {
         return DownloadService.shared.isDownloading(self)
     }
 }
 
 public extension Downloadable {
     /// Checks if file already downloaded
-    public var isDownloadLocalFileExist: Bool {
+    var isDownloadLocalFileExist: Bool {
         return FileManager.default.fileExists(atPath: downloadLocalUrl.path)
     }
 }
